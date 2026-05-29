@@ -11,36 +11,85 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: '*',
+    methods: ['GET', 'POST'],
   },
 });
 
+// ✅ SOCKET CONNECTION
 io.on('connection', socket => {
-  console.log('User connected');
+
+  console.log(
+    'User connected:',
+    socket.id
+  );
 
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+
+    console.log(
+      'User disconnected:',
+      socket.id
+    );
+
   });
 });
 
-// ✅ API route from Symfony
+// ✅ HEALTH CHECK
+app.get('/', (req, res) => {
+
+  res.send(
+    'Socket.IO server is running'
+  );
+
+});
+
+// ✅ API ROUTE FROM SYMFONY
 app.post('/order-update', (req, res) => {
 
-  const { orderId, status } = req.body;
+  try {
 
-  console.log('ORDER UPDATE:', orderId, status);
+    const { orderId, status } = req.body;
 
-  io.emit('orderStatusUpdated', {
-    orderId,
-    status,
-  });
+    console.log(
+      'ORDER UPDATE:',
+      orderId,
+      status
+    );
 
-  res.json({
-    success: true,
-  });
+    // ✅ SEND TO ALL CONNECTED CLIENTS
+    io.emit('orderStatusUpdated', {
+      orderId,
+      status,
+    });
+
+    return res.json({
+      success: true,
+      message:
+        'Order update emitted successfully',
+    });
+
+  } catch (error) {
+
+    console.log(
+      'SOCKET ERROR:',
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        'Failed to emit socket event',
+    });
+
+  }
 });
 
-server.listen(3001, () => {
+// ✅ RAILWAY / RENDER PORT
+const PORT = process.env.PORT || 3001;
+
+server.listen(PORT, () => {
+
   console.log(
-    'Socket server running on port 3001'
+    `Socket server running on port ${PORT}`
   );
+
 });
