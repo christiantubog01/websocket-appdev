@@ -15,47 +15,33 @@ const io = new Server(server, {
   },
 });
 
-// ✅ SOCKET CONNECTION
+// ========================
+// SOCKET CONNECTION
+// ========================
 io.on('connection', socket => {
-
-  console.log(
-    'User connected:',
-    socket.id
-  );
+  console.log('User connected:', socket.id);
 
   socket.on('disconnect', () => {
-
-    console.log(
-      'User disconnected:',
-      socket.id
-    );
-
+    console.log('User disconnected:', socket.id);
   });
 });
 
-// ✅ HEALTH CHECK
+// ========================
+// HEALTH CHECK
+// ========================
 app.get('/', (req, res) => {
-
-  res.send(
-    'Socket.IO server is running'
-  );
-
+  res.send('Socket.IO server is running');
 });
 
-// ✅ API ROUTE FROM SYMFONY
+// ========================
+// ORDER STATUS UPDATE
+// ========================
 app.post('/order-update', (req, res) => {
-
   try {
-
     const { orderId, status } = req.body;
 
-    console.log(
-      'ORDER UPDATE:',
-      orderId,
-      status
-    );
+    console.log('ORDER UPDATE:', orderId, status);
 
-    // ✅ SEND TO ALL CONNECTED CLIENTS
     io.emit('orderStatusUpdated', {
       orderId,
       status,
@@ -63,33 +49,47 @@ app.post('/order-update', (req, res) => {
 
     return res.json({
       success: true,
-      message:
-        'Order update emitted successfully',
     });
 
   } catch (error) {
-
-    console.log(
-      'SOCKET ERROR:',
-      error
-    );
+    console.log('SOCKET ERROR:', error);
 
     return res.status(500).json({
       success: false,
-      message:
-        'Failed to emit socket event',
     });
-
   }
 });
 
-// ✅ RAILWAY / RENDER PORT
+// ========================
+// NEW ORDER EVENT (🔥 ADD THIS)
+// ========================
+app.post('/new-order', (req, res) => {
+  try {
+    const { id, total, status } = req.body;
+
+    console.log('NEW ORDER:', id, total, status);
+
+    // 🔥 send to ALL clients (admin + mobile)
+    io.emit('newOrderCreated', {
+      id,
+      total,
+      status,
+    });
+
+    return res.json({ success: true });
+
+  } catch (error) {
+    console.log('NEW ORDER ERROR:', error);
+
+    return res.status(500).json({ success: false });
+  }
+});
+
+// ========================
+// START SERVER
+// ========================
 const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, () => {
-
-  console.log(
-    `Socket server running on port ${PORT}`
-  );
-
+  console.log(`Socket server running on port ${PORT}`);
 });
